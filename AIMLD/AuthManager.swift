@@ -20,16 +20,25 @@ class AuthManager {
         URLSession.shared.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
                 if let data = data,
-                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let status = json["status"] as? String, status == "success" {
+                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     
-                    let isAdmin = json["isAdmin"] as? Bool ?? false
-                    UserDefaults.standard.set(true, forKey: "AIMLD_Activated")
-                    if isAdmin {
-                        UserDefaults.standard.set(true, forKey: "AIMLD_Admin")
+                    let status = json["status"] as? String
+                    if status == "success" {
+                        let isAdmin = json["isAdmin"] as? Bool ?? false
+                        UserDefaults.standard.set(true, forKey: "AIMLD_Activated")
+                        if isAdmin {
+                            UserDefaults.standard.set(true, forKey: "AIMLD_Admin")
+                        }
+                        completion(true, isAdmin)
+                    } else {
+                        // Hiển thị lỗi từ Server trả về (ví dụ: "Key không tồn tại", "Key đã hết hạn")
+                        let msg = json["message"] as? String ?? "Lỗi không xác định từ Server"
+                        print("Server báo lỗi: \(msg)")
+                        NotificationCenter.default.post(name: NSNotification.Name("ShowError"), object: msg)
+                        completion(false, false)
                     }
-                    completion(true, isAdmin)
                 } else {
+                    NotificationCenter.default.post(name: NSNotification.Name("ShowError"), object: "Không thể kết nối tới Server")
                     completion(false, false)
                 }
             }

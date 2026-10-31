@@ -11,6 +11,18 @@ struct ContentView: View {
     @State private var boxESP = false
     @State private var fastFire = false
     
+    // LẮNG NGHE LỖI TỪ SERVER
+    init() {
+        NotificationCenter.default.addObserver(forName: NSNotification.Name("ShowError"), object: nil, queue: .main) { notification in
+            if let msg = notification.object as? String {
+                // Phải dùng DispatchQueue để cập nhật UI từ luồng phụ
+                DispatchQueue.main.async {
+                    self.errorMsg = msg
+                }
+            }
+        }
+    }
+    
     var body: some View {
         ZStack {
             Color(red: 0.05, green: 0.05, blue: 0.1).ignoresSafeArea()
@@ -26,8 +38,13 @@ struct ContentView: View {
                         .foregroundColor(.white).autocapitalization(.allCharacters).multilineTextAlignment(.center)
                     
                     Button(action: {
+                        errorMsg = "Đang kiểm tra..."
                         AuthManager.shared.validateKey(key: keyInput) { success, isAdmin in
-                            if success { isActivated = true } else { errorMsg = "Sai Key hoặc đã hết hạn!" }
+                            if success { isActivated = true } else { 
+                                if errorMsg == "Đang kiểm tra..." {
+                                    errorMsg = "Sai Key hoặc đã hết hạn!" 
+                                }
+                            }
                         }
                     }) {
                         Text("Kích Hoạt").font(.headline).foregroundColor(.white)
@@ -35,7 +52,9 @@ struct ContentView: View {
                             .background(Color.purple).cornerRadius(10)
                     }
                     
-                    if !errorMsg.isEmpty { Text(errorMsg).foregroundColor(.red).font(.caption) }
+                    if !errorMsg.isEmpty { 
+                        Text(errorMsg).foregroundColor(.red).font(.caption).multilineTextAlignment(.center)
+                    }
                 }.padding(30)
             } else {
                 // GIAO DIỆN MENU CHÍNH
