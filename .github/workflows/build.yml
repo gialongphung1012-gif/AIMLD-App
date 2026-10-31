@@ -1,0 +1,34 @@
+name: Build AIMLD Standalone App
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install xcodegen
+      run: brew install xcodegen
+
+    - name: Generate Xcode Project
+      run: xcodegen generate
+
+    - name: Build App
+      run: |
+        xcodebuild -project AIMLD.xcodeproj -scheme AIMLD -sdk iphoneos -configuration Release CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=NO -derivedDataPath build
+
+    - name: Package IPA
+      run: |
+        mkdir -p Payload
+        cp -r build/Build/Products/Release-iphoneos/AIMLD.app Payload/
+        zip -r AIMLD_App.ipa Payload/
+        
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: AIMLD-Standalone-App
+        path: AIMLD_App.ipa
